@@ -9,3 +9,5 @@ const Meta = () => (
     <title>Sick Fits!</title>
   </Head>  
 )
+
+export default Meta;
