@@ -1,6 +1,18 @@
-import Nav from './Nav';
 import Link from 'next/link';
+import Router from 'next/router';
 import styled from 'styled-components';
+import NProgress from 'nprogress';
+import Nav from './Nav';
+
+Router.onRouteChangeStart = () => {
+  NProgress.start();
+}
+Router.onRouteChangeComplete = () => {
+  NProgress.done();
+}
+Router.onRouteChangeError = () => {
+  NProgress.done(); 
+}
 
 const Logo = styled.h1`
   font-style: 4rem;
@@ -56,7 +68,7 @@ const Header = props => (
       <p>Search</p>
     </div>
     <div>Cart</div>
-  </St> 
+  </StyledHeader> 
 )
 
 export default Header;
