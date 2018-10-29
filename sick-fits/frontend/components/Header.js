@@ -12,7 +12,7 @@ Router.onRouteChangeComplete = () => {
 }
 Router.onRouteChangeError = () => {
   NProgress.done(); 
-}
+} 
 
 const Logo = styled.h1`
   font-style: 4rem;
