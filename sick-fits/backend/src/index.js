@@ -16,6 +16,6 @@ server.start(
     },
   },
   deets => {
-    console.log(`erver is running on http://localhost:${deets.port}`);
+    console.log(`Server is running on http://localhost:${deets.port}`);
   }
 );
