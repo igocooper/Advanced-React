@@ -159,7 +159,7 @@ const Mutation = {
       },
     });
     // 6. generate JWT
-    const token = jwt.sign({ UserID: updatedUser.id }, process.env.APP_SECRET);
+    const token = jwt.sign({ userId: updatedUser.id }, process.env.APP_SECRET);
     // 7. set JWT to cookie
     ctx.response.cookie("token", token, {
       httpOnly: true,
