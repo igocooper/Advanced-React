@@ -1,18 +1,29 @@
-require('dotenv').config({path: 'variables.env'});
+const cookieParser = require("cookie-parser");
+require("dotenv").config({ path: "variables.env" });
+const jwt = require('jsonwebtoken');
 
-const createServer = require('./createServer');
-const db = require('./db');
+const createServer = require("./createServer");
+const db = require("./db");
 
 const server = createServer();
 
-// TODO: use Express middleware to handle cookies (JWT) 
-// TODO: use Express middleware to populate current user 
+server.express.use(cookieParser());
+// middleware to populate current user
+server.express.use((req, res, next) => {
+  const { token } = req.cookies;
+  if (token) {
+    const { userId } = jwt.verify(token, process.env.APP_SECRET);
+    req.userId = userId;
+    console.log('userId', userId);
+  }
+  next();
+});
 
 server.start(
   {
-  cors: {
-    credentials: true,
-    origin: process.env.FRONTEND_URL
+    cors: {
+      credentials: true,
+      origin: process.env.FRONTEND_URL,
     },
   },
   deets => {
