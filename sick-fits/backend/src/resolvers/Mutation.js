@@ -2,13 +2,23 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { randomBytes } = require("crypto");
 const { promisify } = require("util");
+const { hasPermission } = require("../utils");
+const { transport, makeANiceEmail } = require("../mail");
 
 const Mutation = {
   async createItem(parent, args, ctx, info) {
-    // TODO: check if they are logged in
+    if (!ctx.request.userId) {
+      throw new Error("You should be logged in order to create item");
+    }
     const item = await ctx.db.mutation.createItem(
       {
         data: {
+          // this is how to create relations in prisma
+          user: {
+            connect: {
+              id: ctx.request.userId,
+            },
+          },
           ...args,
         },
       },
@@ -42,10 +52,17 @@ const Mutation = {
       {
         where,
       },
-      `{id title}`
+      `{id title user { id }}`
     );
     // check if they has right to delete this item
-    // TODO check it when we add users
+    const ownItem = item.user.id === ctx.request.userId;
+    const hasPermission = ctx.request.user.permissions.some(permission =>
+      ["ADMIN", "ITEMDELETE"].includes(permission)
+    );
+
+    if (!ownItem && !hasPermission) {
+      throw new Error("You don't have a permission to do that!");
+    }
 
     // delete item
     return ctx.db.mutation.deleteItem(
@@ -123,12 +140,25 @@ const Mutation = {
       data: { resetToken, resetTokenExpiry },
     });
 
-    return {
-      message: "Thanks",
-    };
     // 3. send email with generated token
+    const mailRes = await transport.sendMail({
+      from: "wes@wesbos.com",
+      to: user.email,
+      subject: "Your Password Reset Token",
+      html: makeANiceEmail(`Your Password Reset Token is here!
+      \n\n
+      <a href="${process.env.FRONTEND_URL}/reset?resetToken=${resetToken}">Click Here to Reset</a>`),
+    });
+
+    // 4. Return the message
+    return { message: "Thanks!" };
   },
-  async resetPassword(parent, { resetToken, password, confirmPassword }, ctx, info) {
+  async resetPassword(
+    parent,
+    { resetToken, password, confirmPassword },
+    ctx,
+    info
+  ) {
     // 1. check that confirmPassword matches password
     if (password !== confirmPassword) {
       throw new Error("Passwords don't match");
@@ -167,6 +197,29 @@ const Mutation = {
     });
     // return new user
     return updatedUser;
+  },
+  async updatePermissions(parent, args, ctx, info) {
+    // 1. check if they are logged in
+    if (!ctx.request.userId) {
+      throw new Error("You must be logged in!");
+    }
+    // 2. check if they have permissions  to update query
+    hasPermission(ctx.request.user, ["ADMIN", "PERMISSIONUPDATE"]);
+
+    // 3. updatePermissions
+    return await ctx.db.mutation.updateUser(
+      {
+        where: {
+          id: args.id,
+        },
+        data: {
+          permissions: {
+            set: args.permissions,
+          },
+        },
+      },
+      info
+    );
   },
 };
 

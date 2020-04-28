@@ -26,6 +26,7 @@ type Item {
   image: String
   largeImage: String
   price: Int!
+  user: User! @default(value: "ck94n5iitzyfe0923yw84d8a3") 
   updatedAt: DateTime! @updatedAt
   createdAt: DateTime! @createdAt
 }
