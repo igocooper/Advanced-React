@@ -2,6 +2,7 @@ import Link from "next/link";
 import NavStyles from "./styles/NavStyles";
 import User from "./User";
 import Signout from './Signout';
+import CartButton from './CartButton';
 
 const Nav = (props) => (
   <User>
@@ -29,6 +30,7 @@ const Nav = (props) => (
             <a>Sign In</a>
           </Link>
         )}
+        <CartButton>My Cart</CartButton>
       </NavStyles>
     )}
   </User>
