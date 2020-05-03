@@ -20,7 +20,6 @@ const update = (cache, payload) => {
   const data = cache.readQuery({ query: CURRENT_USER_QUERY });
   // 2. Check if item is already in the cart and increment quantity if it is
   const { item: itemToAdd, id: cartItemToAddId , quantity} = payload.data.addToCart;
-  debugger;
   const existedCartItem = data.me.cart.find(
     (cartItem) => cartItem.item.id === itemToAdd.id
   );
