@@ -4,6 +4,7 @@ const { randomBytes } = require("crypto");
 const { promisify } = require("util");
 const { hasPermission } = require("../utils");
 const { transport, makeANiceEmail } = require("../mail");
+const stripe = require("../stripe");
 
 const Mutation = {
   async createItem(parent, args, ctx, info) {
@@ -275,6 +276,55 @@ const Mutation = {
     }
     // 4. remove cart item
     return ctx.db.mutation.deleteCartItem({ where: { id: args.id } }, info);
+  },
+  async createOrder(parent, args, ctx, info) {
+    // 1. Query the current user and make sure they are signed
+    const { userId } = ctx.request;
+    if (!userId) throw new Error("You must to sign in to complete this order.");
+    const user = await ctx.db.query.user(
+      { where: { id: userId } },
+      `{id name email cart {id quantity item {title price id description image largeImage}}}`
+    );
+    // 2. re-calculate total price
+    const amount = user.cart.reduce(
+      (tally, cartItem) => tally + cartItem.item.price * cartItem.quantity,
+      0
+    );
+    console.log("goint to charge for, ", amount);
+    // 3. create Stripe charge
+    const charge = await stripe.charges.create({
+      amount,
+      currency: "USD",
+      source: args.token,
+    });
+    // 4. convert the CartItems to OrderItems
+    const orderItems = user.cart.map(cartItem => {
+      const orderItem = {
+        ...cartItem.item,
+        quantity: cartItem.quantity,
+        user: { connect: { id: userId } },
+      };
+      delete orderItem.id;
+      return orderItem;
+    });
+    // 5. create the order
+    const order = await ctx.db.mutation.createOrder({
+      data: {
+        total: charge.amount,
+        charge: charge.id,
+        items: { create: orderItems },
+        user: { connect: { id: userId } },
+      },
+    });
+
+    // 6. clean up - clear the user cart
+    const cartItemsIds = user.cart.map(cartItem => cartItem.id);
+    await ctx.db.mutation.deleteManyCartItems({
+      where: { id_in: cartItemsIds },
+    });
+    // return Order
+
+    return order;
   },
 };
 

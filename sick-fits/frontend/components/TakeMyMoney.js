@@ -1,4 +1,5 @@
 import React from "react";
+import { adopt } from "react-adopt";
 import { Mutation } from "react-apollo";
 import StripeCheckout from "react-stripe-checkout";
 import Router from "next/router";
@@ -12,32 +13,70 @@ import { STRIPE_PUBLIC_KEY } from "../config";
 const calcItems = (items) =>
   items.reduce((tally, cartItem) => tally + cartItem.quantity, 0);
 
+const CREATE_ORDER_MUTATION = gql`
+  mutation CREATE_ORDER_MUTATION($token: String!) {
+    createOrder(token: $token) {
+      id
+      charge
+      total
+      items {
+        id
+        title
+      }
+    }
+  }
+`;
+
+const Composed = adopt({
+  user: ({ render }) => <User>{render}</User>,
+  createOrder: ({ render }) => (
+    <Mutation
+      mutation={CREATE_ORDER_MUTATION}
+      refetchQueries={[{ query: CURRENT_USER_QUERY }]}
+    >
+      {render}
+    </Mutation>
+  ),
+});
+
 class TakeMyMoney extends React.Component {
-  onToken = (res) => {
-    console.log('Token: ', res);
+  onToken = async (res, createOrder) => {
+    NProgress.start();
+    const order = await createOrder({
+      variables: {
+        token: res.id,
+      },
+    }).catch((err) => alert(err.message));
+    Router.push({
+      pathname: '/order',
+      query: { id: order.data.createOrder.id}
+    });
   };
 
   render() {
     const { children } = this.props;
     return (
-      <User>
-        {({ data: { me } }) => {
+      <Composed>
+        {({ user, createOrder }) => {
+          const {
+            data: { me },
+          } = user;
           return (
             <StripeCheckout
               amount={calcTotalPrice(me.cart)}
               name="Sick Fits"
               description={`Order of ${calcItems(me.cart)} items`}
-              image={me.cart[0].item && me.cart[0].item.image}
+              image={me.cart.length && me.cart[0].item && me.cart[0].item.image}
               stripeKey={STRIPE_PUBLIC_KEY}
               email={me.email}
               currency="USD"
-              token={res => this.onToken(res)}
+              token={(res) => this.onToken(res, createOrder)}
             >
               {children}
             </StripeCheckout>
           );
         }}
-      </User>
+      </Composed>
     );
   }
 }
