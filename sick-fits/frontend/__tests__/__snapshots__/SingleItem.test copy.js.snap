@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<SingleItem /> Errors with not found item 1`] = `
+<p
+  data-test="graphql-error"
+>
+  <strong>
+    Shoot!
+  </strong>
+  No item found!
+</p>
+`;
+
+exports[`<SingleItem /> renderes with proper data 1`] = `null`;
+
+exports[`<SingleItem /> renderes with proper data 2`] = `null`;
+
+exports[`<SingleItem /> renderes with proper data 3`] = `
+<p
+  data-test="graphql-error"
+>
+  <strong>
+    Shoot!
+  </strong>
+  Network error: Error writing result to store for query:
+ query SINGLE_ITEM_QUERY($id: ID!) {
+  item(where: {id: $id}) {
+    id
+    title
+    description
+    largeImage
+    __typename
+  }
+}
+
+Cannot read property 'substring' of undefined
+</p>
+`;

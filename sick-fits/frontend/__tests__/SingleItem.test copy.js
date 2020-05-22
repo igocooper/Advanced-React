@@ -59,7 +59,7 @@ describe("<SingleItem />", () => {
     await wait();
     wrapper.update();
     const item = wrapper.find('[data-test="graphql-error"]');
-    expect(item.text()).toContain('No item found!');
+    expect(item.text()).toContain("No item found!");
     expect(toJSON(item)).toMatchSnapshot();
   });
 });
